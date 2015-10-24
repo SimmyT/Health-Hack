@@ -1,0 +1,78 @@
+---
+title: "EDA Usage of Analysis"
+author: "Alain Lesaffre"
+date: "23 October 2015"
+output: html_document
+---
+```{r, echo=FALSE, message=FALSE}
+Curtin  <- FALSE
+library(dplyr)
+library(knitr)
+library(ggplot2)
+if( Curtin == TRUE){
+        source( "/Users/Alain/Dropbox/HealthHack/Health-Hack/code/common.R")
+}else{
+        source( "/Users/Alain/Documents/My Data Analysis/Health-Hack/code/common.R")   
+}
+```
+
+###Summary
+
+First analysis of the data about usage and quality of analysis in one Perth Hospital. The data are from the Perth Health Hack hold on the 23rd October 2015.
+
+###What do we have? 
+```{r, echo=FALSE}
+if(file.exists(preprocessdataset)){
+  dataset <-readRDS(preprocessdataset)       
+}else{
+  dataset <-read.csv(orgdata, sep="\t", colClasses = typeread)
+}  
+
+numberpatients <-length(unique(dataset$Patient_ID))
+numbprocedures <-length(unique(dataset$Request_ID))
+```
+The data are made of 18 variables for ```r numberpatients``` patients  and ```r numbprocedures``` number of procedures. The variables are:
+
+1. Patient_ID: A reference id such as ```r dataset$Patient_ID[1]```, current range ```r range(dataset$Patient_ID)```
+
+2. Index_ID:   Identifier for one set of analysis, there are ```r length(unique(dataset$Request_ID))``` in the current dataset. 
+
+3. data_coln:  The date the current analysis has been collected, the format seems to base on a starting date. __The 1 January 1970 is not the strating date, to be checked__
+
+4. cc_order: It is the reference number of the ward, the ward field is not unique, for report by ward we should use the cc_number
+
+####Exploration first patient
+```{r, echo=FALSE}
+firstpatient <-dataset %>% filter(Patient_ID == Patient_ID[1] &  Request_ID ==  Request_ID[1])
+patientprocedures <- firstpatient  %>% select(11:18)  #We cut
+
+
+```
+
+The first patient is from the ward ```r firstpatient$ward[1]```, what is surprizing is that all the ```r dim(firstpatient)[1]``` have been collected on the same day. __We have to check if this is one error__. 
+Out of the ```r dim(firstpatient)[1]``` procedures, ```r sum(patientprocedures$alpha =="/")``` are negative as signaled by the / character. What should be check is why do we have empty alpha in our case we have ```r   sum(patientprocedures$alpha == "")```, _to be checked_.
+
+The type of panel name is always similar and is ```r firstpatient$panelname[1]```. 
+
+
+In this case the antibiotic name could be surprising for example ```r firstpatient$antibiotic.name[37]``, which doe not seem as antibitic but have one other meaning to _verify_. 
+
+#### All patients
+```{r, echo=FALSE}
+numberallnegative = sum(dataset$alpha == "/")
+```
+
+As the number of negatives is important, we can do a quick check using the alpha / negative result.  We have ```r numberallnegative ``` or ```r numberallnegative / nrow(dataset)``` % of negative. Which is really the case very high. 
+
+
+
+
+
+
+####Transformation 
+It appears that we can build two tables:
+
+1. One of patient itemt reference 
+
+2. One for the analysis 
+

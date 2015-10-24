@@ -1,0 +1,144 @@
+---
+title: "Blood Sample"
+author: "Antimicrobial Resistance"
+date: "24 October 2015"
+output: html_document
+---
+```{r, echo=FALSE, message=FALSE}
+Curtin  <- FALSE
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(lubridate)
+if( Curtin == TRUE){
+        source( "/Users/Alain/Dropbox/HealthHack/Health-Hack/code/common.R")
+}else{
+        source( "/Users/Alain/Documents/My Data Analysis/Health-Hack/code/common.R")   
+}
+```
+##Summary
+
+First exploration of the one two blood samples.
+
+###Number sample
+
+```{r, echo=FALSE}
+if(file.exists(preprocessdataset)){
+  dataset <-readRDS(preprocessdataset)       
+}else{
+  dataset <-read.csv(orgdata, sep="\t", stringsAsFactor = FALSE)
+  dataset$date_coln <-sub("/14","/2014", dataset$date_coln)
+  dataset$date_coln <-sub("/15","/2015", dataset$date_coln)
+  dataset$date_coln <-strptime(dataset$date_coln, "%d/%m/%Y")
+  dataset$date_coln <-as.Date(dataset$date_coln)
+  dataset$date_entry <-sub("/14","/2014", dataset$date_entry)
+  dataset$date_entry <-sub("/15","/2015", dataset$date_entry)
+  dataset$date_entry <-strptime(dataset$date_entry, "%d/%m/%Y")
+  dataset$date_entry <-as.Date(dataset$date_entry)
+  saveRDS(dataset, preprocessdataset)
+} 
+# Blood sample by per patient
+Patientbloodsample <-dataset[ dataset$panel =="BS1" & ( dataset$cc_order == 11 | dataset$cc_order == 12) & dataset$item == "Bs" &  ( dataset$alpha == "\\" | dataset$punctuation == "F"),] 
+Patientbloodsample  <- Patientbloodsample[ !is.na(Patientbloodsample$panel),]
+
+Patientbloodsample  <- Patientbloodsample %>% group_by(Patient_ID, date_coln) %>% summarise( nbrequest = length(unique(Request_ID)))
+                                                                                                                                                                                    
+```
+
+The samples distribution looks as follow. For this graphic we use:
+
+1. The Ward refrence _(cc_order)_ 11 and 12
+
+2. The panel __BS1__
+
+3. And then the rule: Number of requests for the same day per patient with positive or negative result _(punctuation = F or alpha is backslash)_
+
+A 2 blood sample increases the power of positive predictive by up to 20%. _(references to be added). In the current sample made for 2014  ```r  (sum(Patientbloodsample$nbrequest > 1) / nrow(Patientbloodsample) ) * 100``` % of the patients had two blood samples done (for patients in emergency ward).
+
+```{r, echo= FALSE}
+dspsample <-ggplot(Patientbloodsample, aes(x=nbrequest)) + 
+                    geom_histogram(binwidth=.1, fill="blue") +
+                    ggtitle("Number of one and two samples or more with puctuation F")
+dspsample
+```
+
+##The monthly variations
+
+```{r, echo=FALSE}
+Patientbloodsample$month <-factor(month(Patientbloodsample$date_coln))
+dspdata <-Patientbloodsample 
+dspdata$nbrequest <-ifelse(dspdata$nbrequest > 2, 2, dspdata$nbrequest )
+dspdata$nbrequest <-factor(dspdata$nbrequest )
+dspdata <-dspdata %>% group_by(nbrequest, month) %>% summarise(permonth=n())
+dsptemp <-ggplot(dspdata, aes(x=month, y=permonth, fill= nbrequest)) +
+          geom_bar(stat='identity', position ='dodge')+
+          ggtitle("Total blood cultures collected per month (ED) ")
+dsptemp
+```
+
+####What happens with multiple samples? 
+
+First it seems we have a very low number of blood sampe on the sub data set about 770 with the query _(dataset[ dataset$panel =="BS1" & ( dataset$cc_order == 11 | dataset$cc_order == 12) & dataset$item == "Bs" &  ( dataset$alpha == "\\" | dataset$punctuation == "F"),])_, where as we have more than half million records. Anyway for the moment we leave this on hold. 
+
+In the following graphic it is obvious that the two samples with a population of 700, is  more ablre to find pathogens, one should be careful that even if the contact is simalar emeragncy in same hospital the pathology of the patient could be different and we do not know this distribution. 
+
+```{r, echo=FALSE}
+alphadataset <-read.csv(alphadata, stringsAsFactor= FALSE)
+Patientbloodsample <-dataset[ dataset$panel =="BS1" & ( dataset$cc_order == 11 | dataset$cc_order == 12) & dataset$item == "Bs" &   dataset$punctuation == "F",] 
+Patientbloodsample  <- Patientbloodsample[ !is.na(Patientbloodsample$panel),]
+Patientbloodref     <- Patientbloodsample
+Patientbloodsample  <- Patientbloodsample %>% group_by(Patient_ID, date_coln) %>% summarise( nbrequest = length(unique(Request_ID)))
+Patientbloodsample$nbrequest <-ifelse(Patientbloodsample$nbrequest > 2, 2, Patientbloodsample$nbrequest )
+refpatientsample1 <-Patientbloodsample[Patientbloodsample$nbrequest ==1, ]
+refpatientsample2 <-Patientbloodsample[Patientbloodsample$nbrequest ==2, ]
+#  We start with sample 1 
+pathogen <-replicate(nrow(refpatientsample1), FALSE)
+refpatientsample1 <-cbind(refpatientsample1, pathogen)
+pathogen <-replicate(nrow(refpatientsample2), FALSE)
+refpatientsample2 <-cbind(refpatientsample2, pathogen)
+
+
+checkpathogen <-function(patientref,Ref) {
+        retpat <-FALSE
+        samples <-Ref[Ref$Patient_ID == patientref$Patient_ID & Ref$date_coln == patientref$date_coln, ]
+        for(currec in 1:nrow(samples)) {
+                whichalpha <-which(alphadataset$alpha == samples$alpha[currec])
+                if(length(whichalpha) == 0 ) {
+                        message(paste0("Problem alpha not found please check alpha table : ",samples$alpha[currec]))
+                        next()
+                }
+                if(alphadataset$BS1Pathogen[whichalpha] == "pathogen") {
+                retpat <-TRUE  
+                }
+        }
+        return(retpat)
+}
+
+
+for(curpatient in 1:nrow(refpatientsample1) ){
+        refpatientsample1$pathogen[curpatient] <-checkpathogen(refpatientsample1[curpatient,], Patientbloodref)
+}
+
+for(curpatient in 1:nrow(refpatientsample2) ){
+        refpatientsample2$pathogen[curpatient] <-checkpathogen(refpatientsample2[curpatient,], Patientbloodref)
+}
+
+typetest1 <-replicate(nrow(refpatientsample1),"one sample")
+typetest2 <-replicate(nrow(refpatientsample2),"two samples")
+type <-c(typetest1,typetest2)
+results <-c(refpatientsample1$pathogen,refpatientsample2$pathogen)
+dspsampleonetwo <-data.frame(sampletype=type, results)
+dspsampleonetwo$sampletype <-factor(dspsampleonetwo$sampletype)
+dspgraphsample <-ggplot(dspsampleonetwo , aes(x=sampletype, fill= results)) +
+                geom_histogram( binwidth=.1, position="dodge") +
+                ggtitle("Pathogen for one and two bools samples ")                         
+dspgraphsample                                 
+```
+
+
+##The effect 
+```{r, echo=FALSE}
+
+```
+
+The hypothesis is that we could have better yield in term of pathogenes in two samples than one. 
