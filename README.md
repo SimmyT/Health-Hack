@@ -1,7 +1,8 @@
 # Health-Hack
-Perth Health Hack 
+Perth Health Hack  of Ocober 2015. This repository includes the work of the team, who worked on one accute problem in Hospital, the quality of analysis. 
+
 #Summary
-This repository includes the codes for the reports of the Perth Healt Hack. The object of this great week end was to be able to do a reproducible report about the analysis conduct in one of the Perth Hospital. 
+This repository includes the codes for the reports and its data. The object of this great week end was to be able to do a reproducible report about the analysis conduct in one of the Perth Hospital. 
 The data set is made of more than half million observation take over a period of one and half year. 
 
 #The code 
@@ -13,10 +14,15 @@ About the data, the main dataset is in two format, txt and Rda. During the first
 
 #The report
 
-One the final aim was to generate a reproducible report. Yuu can see the report about the blood sample analysis, by going to the folder project report. 
+One the final aim was to generate a reproducible report. Yuu can see the report about the blood samplesanalysis, by going to the folder project report.  The bood sample analysis for this report were from the emergency ward. 
+
+The second type of analysis is about the urine test. 
 
 The R markdown, _bloodsamplecollection_ is the script to use to generate this report.
 
+#The next steps
+
+You could expect on Web based report in the coming day. 
 
 #The Team 
 
