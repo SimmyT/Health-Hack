@@ -64,24 +64,28 @@ dspsample
 
 ##The monthly variations
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 Patientbloodsample$month <-month(Patientbloodsample$date_coln)
 Patientbloodsample$year  <-year(Patientbloodsample$date_coln) 
 Patientbloodsample$yearmonth <-paste(as.character(Patientbloodsample$month), as.character(Patientbloodsample$year), sep="-")
-Patientbloodsample$yearmonth <-factor(Patientbloodsample$yearmonth)
+Patientbloodsample <-Patientbloodsample[order(Patientbloodsample$month,Patientbloodsample$year ),]
+scalex <-c("1-2014","2-2014","3-2014","4-2014","5-2014","6-2014","7-2014","8-2014",  
+           "9-2014","10-2014","11-2014","12-2014","1-2015","2-2015","3-2015","4-2015",
+           "5-2015","6-2015","7-2015")
 dspdata <-Patientbloodsample 
 dspdata$nbrequest <-ifelse(dspdata$nbrequest > 2, 2, dspdata$nbrequest )
 dspdata$nbrequest <-factor(dspdata$nbrequest )
 dspdata <-dspdata %>% group_by(nbrequest, yearmonth) %>% summarise(permonth=n())
 dsptemp <-ggplot(dspdata, aes(x=yearmonth, y=permonth, fill= nbrequest)) +
           geom_bar(stat='identity', position ='dodge')+
+          scale_x_discrete(limits=scalex) +
           ggtitle("Total blood cultures collected per month (ED) ")
 dsptemp
 ```
 
 ####What happens with multiple samples? 
 
-First it seems we have a very low number of blood sampe on the sub data set about 770 with the query _(dataset[ dataset$panel =="BS1" & ( dataset$cc_order == 11 | dataset$cc_order == 12) & dataset$item == "Bs" &  ( dataset$alpha == "\\" | dataset$punctuation == "F"),])_, where as we have more than half million records. Anyway for the moment we leave this on hold. 
+First it seems we have a very low number of blood sampe on the sub data set about 770 with the query _(dataset[dataset\$panel =="BS1" & (dataset\$cc_order == 11 | dataset\$cc_order == 12) & dataset\$item == "Bs" &  ( dataset\$alpha == "\\" | dataset$punctuation == "F"),])_, where as we have more than half million records. Anyway for the moment we leave this on hold. 
 
 In the following graphic it is obvious that the two samples with a population of 700, is  more ablre to find pathogens, one should be careful that even if the contact is simalar emeragncy in same hospital the pathology of the patient could be different and we do not know this distribution. 
 
