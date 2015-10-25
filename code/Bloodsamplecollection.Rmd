@@ -10,7 +10,7 @@ library(dplyr)
 library(knitr)
 library(ggplot2)
 library(lubridate)
-if( Curtin == TRUE){
+if(Curtin==TRUE){
         source( "/Users/Alain/Dropbox/HealthHack/Health-Hack/code/common.R")
 }else{
         source( "/Users/Alain/Documents/My Data Analysis/Health-Hack/code/common.R")   
@@ -65,12 +65,15 @@ dspsample
 ##The monthly variations
 
 ```{r, echo=FALSE}
-Patientbloodsample$month <-factor(month(Patientbloodsample$date_coln))
+Patientbloodsample$month <-month(Patientbloodsample$date_coln)
+Patientbloodsample$year  <-year(Patientbloodsample$date_coln) 
+Patientbloodsample$yearmonth <-paste(as.character(Patientbloodsample$month), as.character(Patientbloodsample$year), sep="-")
+Patientbloodsample$yearmonth <-factor(Patientbloodsample$yearmonth)
 dspdata <-Patientbloodsample 
 dspdata$nbrequest <-ifelse(dspdata$nbrequest > 2, 2, dspdata$nbrequest )
 dspdata$nbrequest <-factor(dspdata$nbrequest )
-dspdata <-dspdata %>% group_by(nbrequest, month) %>% summarise(permonth=n())
-dsptemp <-ggplot(dspdata, aes(x=month, y=permonth, fill= nbrequest)) +
+dspdata <-dspdata %>% group_by(nbrequest, yearmonth) %>% summarise(permonth=n())
+dsptemp <-ggplot(dspdata, aes(x=yearmonth, y=permonth, fill= nbrequest)) +
           geom_bar(stat='identity', position ='dodge')+
           ggtitle("Total blood cultures collected per month (ED) ")
 dsptemp
